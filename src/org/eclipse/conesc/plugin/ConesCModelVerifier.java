@@ -15,8 +15,10 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 
 import org.eclipse.conesc.plugin.model.Connection;
 import org.eclipse.conesc.plugin.model.Context;
@@ -128,9 +130,9 @@ public class ConesCModelVerifier {
 		
 		String nexts = "";
 		String nexts_triggers = "";
+		HashMap<String, List<String> > triggers = new HashMap<String, List<String> >();
 		for(Node group:diagram.getChildrenArray()) {
 			String state_var = group.getName().replaceAll(" ", "")+"_state";
-			nexts_triggers += "  next("+state_var+") :=\n   case\n";
 			nexts += "  next_"+state_var+" :=\n   case\n";
 			for(Node child:group.getChildrenArray()) {
 				Context ctx = (Context)child;
@@ -145,12 +147,28 @@ public class ConesCModelVerifier {
 						event_condition = label.split(" iff ")[0].replaceAll(" ", "_");
 					nexts += "    "+state_var+" = "+state_name+" & event = "+event_condition+getDependencies(label)+
 							 " : "+con.getTarget().getName().replaceAll(" ", "")+";\n";
+					// dealing with triggers
+					if (ctx.getTriggers().isEmpty()) continue;
+					for(String trigger:ctx.getTriggers().split("\\n")){
+						if(!trigger.contains("."))continue;
+						String group_name = trigger.split("\\.")[0]+"_state";
+						if (!triggers.containsKey(group_name)) triggers.put(group_name, new ArrayList<String>());
+						triggers.get(group_name).add("    "+state_var+" != "+state_name+" & next_"+state_var+" = "+state_name+" : "+trigger.split("\\.")[1]+";\n");
+					}
 				}
 			}
 			nexts += "    TRUE : "+state_var+";\n   esac;\n";
+		}
+		// still dealing with triggers....
+		for(Node group:diagram.getChildrenArray()) {
+			String state_var = group.getName().replaceAll(" ", "")+"_state";
+			nexts_triggers += "  next("+state_var+") :=\n   case\n";
+			if (triggers.containsKey(state_var))
+				for(String trigger:triggers.get(state_var))
+					nexts_triggers += trigger;
 			nexts_triggers += "    TRUE : next_" + state_var + ";\n   esac;\n";
 		}
-		
+		// DONE!
 		map.put("nexts", nexts+nexts_triggers);
 		
 		String specs = "";
