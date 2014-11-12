@@ -40,6 +40,7 @@ public class ConesCModelVerifier {
 			" VAR\n"+
 			"%vars%"+//place for vars
 			"%events%"+//place for events
+			"%next_vars%"+
 			" ASSIGN\n"+
 			"%inits%"+//place for inits
 			"%nexts%"+//place for nexts
@@ -53,10 +54,10 @@ public class ConesCModelVerifier {
 		generateModel(constraints);
 		String result = "";
 		for (String key : generated.keySet()) {
-			FileManager.fwrite(key,generated.get(key));
-			System.out.println("Verifying the model:\n"+generated.get(key));
+			String model = FileManager.fwrite(key,generated.get(key));
+			//System.out.println("Verifying the model:\n"+generated.get(key));
 			try {
-				Process p = new ProcessBuilder(BinarySelector.getNuSMVBin(),key).start();
+				Process p = new ProcessBuilder(BinarySelector.getNuSMVBin(),model).start();
 				BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
 
 				String line = null;
@@ -69,10 +70,8 @@ public class ConesCModelVerifier {
 				System.err.println("Exception verifying the model:\n"+generated.get(key));
 				e.printStackTrace();
 			}
+			FileManager.delete(model);
 		}
-		
-		for (String key : generated.keySet()) 
-			FileManager.delete(key);
 		
 		return result;
 	}
@@ -82,7 +81,8 @@ public class ConesCModelVerifier {
 		
 		String vars = "";
 		for(Node group:diagram.getChildrenArray()) {
-			vars += "  " + group.getName().replaceAll(" ", "") + "_state : {";
+			String g_name = group.getName().replaceAll(" ", "");
+			vars += "  " + g_name + "_state : {";
 			for(Node ctx:group.getChildrenArray())
 				vars += ctx.getName().replaceAll(" ", "") + ", ";
 			vars = vars.substring(0, vars.length()-2) + "};\n";
@@ -104,6 +104,16 @@ public class ConesCModelVerifier {
 		events = events.substring(0, events.length()-2) + "};\n";
 		map.put("events", events);
 		
+		String next_vars = "";
+		for(Node group:diagram.getChildrenArray()) {
+			String g_name = group.getName().replaceAll(" ", "");
+			next_vars += "  next_" + g_name + "_state : {";
+			for(Node ctx:group.getChildrenArray())
+				next_vars += ctx.getName().replaceAll(" ", "") + ", ";
+			next_vars = next_vars.substring(0, next_vars.length()-2) + "};\n";
+		}
+		map.put("next_vars", next_vars);
+		
 		String inits = "";
 		for(Node group:diagram.getChildrenArray())
 			for(Node child:group.getChildrenArray()) {
@@ -117,9 +127,11 @@ public class ConesCModelVerifier {
 		map.put("inits", inits);
 		
 		String nexts = "";
+		String nexts_triggers = "";
 		for(Node group:diagram.getChildrenArray()) {
 			String state_var = group.getName().replaceAll(" ", "")+"_state";
-			nexts += "  next("+state_var+") :=\n   case\n";
+			nexts_triggers += "  next("+state_var+") :=\n   case\n";
+			nexts += "  next_"+state_var+" :=\n   case\n";
 			for(Node child:group.getChildrenArray()) {
 				Context ctx = (Context)child;
 				String state_name = ctx.getName().replaceAll(" ", "");
@@ -136,8 +148,10 @@ public class ConesCModelVerifier {
 				}
 			}
 			nexts += "    TRUE : "+state_var+";\n   esac;\n";
+			nexts_triggers += "    TRUE : next_" + state_var + ";\n   esac;\n";
 		}
-		map.put("nexts", nexts);
+		
+		map.put("nexts", nexts+nexts_triggers);
 		
 		String specs = "";
 		String[] formulas = constraints.split(";");
@@ -145,7 +159,7 @@ public class ConesCModelVerifier {
 			specs += "SPEC "+translate(formulas[i])+"\n";
 		map.put("specs", specs);
 		
-		generated.put("/Users/michael/test/test_model/wildlife.smv", StringTemplate.build(applicationModel, map));
+		generated.put("wildlife.smv", StringTemplate.build(applicationModel, map));
 	}
 
 	private String getDependencies(String label) {

@@ -28,7 +28,7 @@ import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.runtime.CoreException;
 
 public class FileManager {
-	public static void fwrite(String name, String data) {
+	public static String fwrite(String name, String data) {
 		File f = new File(name);
 		if (!f.exists())
 			try {
@@ -47,6 +47,8 @@ public class FileManager {
 		}
 		writer.print(data);
 		writer.close();
+		
+		return f.getAbsolutePath();
 	}
 	
 	public static void delete(String name) {
