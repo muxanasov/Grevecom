@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.0"?>
+<plugin>
+
+     <extension point="org.eclipse.ui.editors">
+      <editor name="ConesC Graphical Editor"
+              extensions="cgd"
+              icon="shapes.gif"
+              default="true"
+              class="org.eclipse.conesc.plugin.ConesCEditor"
+              contributorClass="org.eclipse.conesc.plugin.ConesCEditorActionBarContributor"
+              id="org.eclipse.conesc.plugin.ShapesEditor">
+      </editor>
+   </extension>
+   <extension point="org.eclipse.ui.newWizards">
+      <category name="Examples"
+                parentCategory="org.eclipse.ui.Examples"
+                id="org.eclipse.gef.examples"/>
+      <wizard name="ConesC Graphical Diagram (.cgd)"
+              icon="shapes.gif"
+              category="org.eclipse.ui.Examples/org.eclipse.gef.examples"
+              class="org.eclipse.conesc.plugin.wizards.ConesCCreationWizard"
+              id="org.eclipse.conesc.plugin.ShapesCreationWizard">
+         <selection class="org.eclipse.core.resources.IResource"/>
+      </wizard>
+   </extension>
+</plugin>
