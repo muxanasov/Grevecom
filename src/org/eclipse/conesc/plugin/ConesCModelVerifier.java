@@ -157,9 +157,24 @@ public class ConesCModelVerifier {
 		String[] formulas = constraints.split(";");
 		for(int i=0;i<formulas.length;i++)
 			specs += "SPEC "+translate(formulas[i])+"\n";
+		// checking that all transitions are legal
+		for(Node group:diagram.getChildrenArray()){
+			String state_var = group.getName().replaceAll(" ", "")+"_state";
+			for(Node child:group.getChildrenArray()){
+				Context ctx = (Context)child;
+				String state_name = ctx.getName().replaceAll(" ", "");
+				if (ctx.getSourceConnections().size() == group.getChildrenArray().size() - 1) continue;
+				for (Object o:ctx.getSourceConnections()){
+					Connection con = (Connection)o;
+					String target_name = con.getTarget().getName().replaceAll(" ", "");
+					specs += "SPEC AG ("+state_var+"="+state_name+" -> AX ("+state_var+"="+state_name+"|"+state_var+"="+target_name+"))\n";
+				}
+			}
+		}
+				
 		map.put("specs", specs);
 		
-		generated.put("wildlife.smv", StringTemplate.build(applicationModel, map));
+		generated.put("model.smv", StringTemplate.build(applicationModel, map));
 	}
 
 	private String getDependencies(String label) {
