@@ -34,8 +34,11 @@ import org.osgi.framework.Bundle;
 
 public class ConesCModelVerifier {
 	
+	private static final String YOUR_SPECIFICATION = "your specification";
+	private static final String TRANSITION_FROM = "transition from";
 	private ContextDiagram diagram;
 	private HashMap<String, String> generated = new HashMap<String, String>();
+	private HashMap<String, String> specifications = new HashMap<String, String>();
 	
 	private final String applicationModel =
 			"MODULE main\n"+
@@ -55,6 +58,8 @@ public class ConesCModelVerifier {
 	public String verify(String constraints) {
 		generateModel(constraints);
 		String result = "";
+		for (String spec:specifications.keySet())
+			System.out.println(spec+" : "+specifications.get(spec));
 		for (String key : generated.keySet()) {
 			String model = FileManager.fwrite(key,generated.get(key));
 			//System.out.println("Verifying the model:\n"+generated.get(key));
@@ -63,10 +68,30 @@ public class ConesCModelVerifier {
 				BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
 
 				String line = null;
+				String counterexample = "";
 				while ((line = br.readLine()) != null) {
 					if(line.startsWith("***")||line.isEmpty()) continue;
-					result += line+"\n";
+					System.out.println(line);
+					if (!line.startsWith("--")) {
+						counterexample += line+"\n";
+						continue;
+					}
+					if (!line.contains("is true") && !line.contains("is false")) continue;
+					for (String spec:specifications.keySet()){
+						if (!line.contains(spec)) continue;
+						if (line.contains("is false")) {
+							line = "Violation of " + specifications.get(spec)+".";
+							break;
+						}
+						if (line.contains("is true")) {
+							line = "";
+							break;
+						}
+					}
+					result += counterexample+line+"\n";
+					counterexample = "";
 				}
+				result += counterexample;
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				System.err.println("Exception verifying the model:\n"+generated.get(key));
@@ -74,6 +99,7 @@ public class ConesCModelVerifier {
 			}
 			FileManager.delete(model);
 		}
+		
 		
 		return result;
 	}
@@ -173,8 +199,11 @@ public class ConesCModelVerifier {
 		
 		String specs = "";
 		String[] formulas = constraints.split(";");
-		for(int i=0;i<formulas.length;i++)
-			specs += "SPEC "+translate(formulas[i])+"\n";
+		for(int i=0;i<formulas.length;i++) {
+			String spesification = translate(formulas[i]);
+			specs += "SPEC "+spesification+"\n";
+			//specifications.put(spesification, YOUR_SPECIFICATION);
+		}
 		// checking that all transitions are legal
 		for(Node group:diagram.getChildrenArray()){
 			String state_var = group.getName().replaceAll(" ", "")+"_state";
@@ -185,7 +214,9 @@ public class ConesCModelVerifier {
 				for (Object o:ctx.getSourceConnections()){
 					Connection con = (Connection)o;
 					String target_name = con.getTarget().getName().replaceAll(" ", "");
-					specs += "SPEC AG ("+state_var+"="+state_name+" -> AX ("+state_var+"="+state_name+"|"+state_var+"="+target_name+"))\n";
+					String specification = "AG ("+state_var+" = "+state_name+" -> AX ("+state_var+" = "+state_name+" | "+state_var+" = "+target_name+"))";
+					specs += "SPEC "+specification+"\n";
+					specifications.put(specification, TRANSITION_FROM+" "+state_name);
 				}
 			}
 		}
