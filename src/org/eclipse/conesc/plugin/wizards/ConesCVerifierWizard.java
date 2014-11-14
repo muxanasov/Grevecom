@@ -11,11 +11,12 @@
 
 package org.eclipse.conesc.plugin.wizards;
 
-import org.eclipse.conesc.plugin.ConesCModelVerifier;
 import org.eclipse.conesc.plugin.model.ContextDiagram;
 import org.eclipse.conesc.plugin.model.Node;
 import org.eclipse.conesc.plugin.utils.Cashe;
 import org.eclipse.conesc.plugin.utils.HelperAssistant;
+import org.eclipse.conesc.plugin.verifier.ConesCModelVerifier;
+import org.eclipse.conesc.plugin.verifier.NuSMVResultParser;
 import org.eclipse.jface.bindings.keys.KeyStroke;
 import org.eclipse.jface.bindings.keys.ParseException;
 import org.eclipse.jface.fieldassist.ContentProposalAdapter;
@@ -24,12 +25,20 @@ import org.eclipse.jface.fieldassist.TextContentAdapter;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.PaintEvent;
+import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.ExpandBar;
+import org.eclipse.swt.widgets.ExpandItem;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 
@@ -38,6 +47,7 @@ public class ConesCVerifierWizard extends Wizard {
 	private class EditPage extends WizardPage {
 		public Text constraints;
 		public Text output;
+		public ExpandBar bar;
 		public EditPage(String pageName) {
 			super(pageName);
 			setTitle("Verification.");
@@ -65,7 +75,9 @@ public class ConesCVerifierWizard extends Wizard {
 			verify.addSelectionListener(new SelectionAdapter(){
 				public void widgetSelected(SelectionEvent evt){
 					Cashe.deposit("constraints", getConstraints());
-					output.setText(new ConesCModelVerifier(diagram).verify(constraints.getText()));
+					NuSMVResultParser parser = new NuSMVResultParser(new ConesCModelVerifier(diagram), constraints.getText());
+					output.setText(parser.parse());
+					parser.displayResultsOn(bar);
 				}
 			});
 			
@@ -73,8 +85,16 @@ public class ConesCVerifierWizard extends Wizard {
 			output.setText("");
 			gd = new GridData(GridData.FILL_HORIZONTAL);
 			gd.horizontalSpan = 6;
-			gd.heightHint = 12 * output.getLineHeight();
+			gd.heightHint = 6 * output.getLineHeight();
 			output.setLayoutData(gd);
+			
+			// counterexamples' tab
+			
+			bar = new ExpandBar (composite, SWT.V_SCROLL);
+			gd = new GridData(GridData.FILL_HORIZONTAL);
+			gd.horizontalSpan = 6;
+			gd.heightHint = 200;
+			bar.setLayoutData(gd);
 			
 			setControl(composite);
 		}
@@ -91,11 +111,6 @@ public class ConesCVerifierWizard extends Wizard {
 	@Override
 	public boolean performFinish() {
 		EditPage page = (EditPage)getPage("Verification");
-		
-		if (page.constraints.getText().isEmpty()) {
-			page.setErrorMessage("No constraints are specified. Nothing to do.");
-			return false;
-		}
 		
 		constraints = page.constraints.getText();
 		return true;

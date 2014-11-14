@@ -11,8 +11,8 @@
 
 package org.eclipse.conesc.plugin.model.commands;
 import org.eclipse.conesc.plugin.ConesCCodeGenerator;
-import org.eclipse.conesc.plugin.ConesCModelVerifier;
 import org.eclipse.conesc.plugin.model.ContextDiagram;
+import org.eclipse.conesc.plugin.verifier.ConesCModelVerifier;
 import org.eclipse.gef.commands.Command;
 
 

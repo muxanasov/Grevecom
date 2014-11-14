@@ -67,7 +67,7 @@ public class ConesCVerifyAction extends SelectionAction {
 		ConesCVerifierWizard wizard = new ConesCVerifierWizard(diagram);
 		WizardDialog dialog = new WizardDialog(getWorkbenchPart().getSite().getShell(),wizard);
 		dialog.create();
-		dialog.getShell().setSize(600, 360);
+		dialog.getShell().setSize(600, 500/*360*/);
 		dialog.setTitle("Context Model Verifier.");
 		dialog.setMessage("Specify a CTL expession to verify your model against.");
 		if (dialog.open() == WizardDialog.OK) {
