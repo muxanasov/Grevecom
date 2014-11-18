@@ -70,10 +70,8 @@ public class NuSMVResultParser {
 	}
 	
 	public void displayResultsOn(ExpandBar bar){
-		for(String spec:_counterexamples.keySet()) {
-			System.out.println(spec + " : " + _counterexamples.get(spec));
+		for(String spec:_counterexamples.keySet())
 			addItem(bar, spec, _counterexamples.get(spec));
-		}
 	}
 	
 	private void addItem(ExpandBar bar, String title, String content) {
@@ -184,7 +182,6 @@ public class NuSMVResultParser {
 				new_xmargin = line_stop.x;
 			}
 			_canvas_w = (_canvas_w == 0)?canvas_w:_canvas_w;
-			//System.out.println(_canvas_w);
 		}
 		
 		public int calculateCanvasH() {
@@ -206,11 +203,6 @@ public class NuSMVResultParser {
 				// substring because we have 2 redundant spaces :/
 				state.put(line.substring(2,line.length()).split("_state = ")[0], line.split("_state = ")[1]);
 			}
-			System.out.println(lines);
-			state = _first_state;
-			//System.out.println(state);
-			while((state = state.nextState()) != null);
-				//System.out.println(state + state.getEvent()+"\n");
 			_canvas_h = 27+STR_H*(1+lines);
 			return _canvas_h;
 		}
@@ -233,7 +225,7 @@ public class NuSMVResultParser {
 			return _next;
 		}
 		public String getEvent() {
-			return (_next == null)? "" : _event;
+			return (_next == null)? "" : _event.replaceAll("_", " ");
 		}
 		public int lines(){
 			return _label.size();
