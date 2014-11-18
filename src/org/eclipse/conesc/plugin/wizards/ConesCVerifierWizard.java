@@ -89,8 +89,7 @@ public class ConesCVerifierWizard extends Wizard {
 			output.setLayoutData(gd);
 			
 			// counterexamples' tab
-			
-			bar = new ExpandBar (composite, SWT.V_SCROLL);
+			bar = new ExpandBar (composite, SWT.V_SCROLL | SWT.H_SCROLL);
 			gd = new GridData(GridData.FILL_HORIZONTAL);
 			gd.horizontalSpan = 6;
 			gd.heightHint = 200;
