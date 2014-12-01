@@ -34,8 +34,10 @@ import org.osgi.framework.Bundle;
 
 public class ConesCModelVerifier {
 	
-	private static final String YOUR_SPECIFICATION = "your specification";
-	private static final String TRANSITION_FROM = "transition from";
+	private static final String YOUR_SPECIFICATION = "Violation of your specification";
+	private static final String TRANSITION_FROM = "Violation of transition from context";
+	private static final String REACHABILITY_OF = "Unreachable context";
+	private static final String DEADLOCK_AT = "Deadlock at context";
 	private ContextDiagram diagram;
 	private HashMap<String, String> generated = new HashMap<String, String>();
 	private HashMap<String, String> specifications = new HashMap<String, String>();
@@ -199,6 +201,37 @@ public class ConesCModelVerifier {
 					specs += "SPEC "+specification+"\n";
 					specifications.put(specification, TRANSITION_FROM+" "+group.getName().replaceAll(" ", "")+"."+state_name);
 				}
+			}
+		}
+		
+		// checking that all contexts are reachable
+		for(Node group:diagram.getChildrenArray()){
+			String state_var = group.getName().replaceAll(" ", "")+"_state";
+			for(Node child:group.getChildrenArray()){
+				String state_name = child.getName().replaceAll(" ", "");
+				String specification = "AG (EF "+state_var+" = "+state_name+")";
+				specs += "SPEC "+specification+"\n";
+				specifications.put(specification, REACHABILITY_OF+" "+group.getName().replaceAll(" ", "")+"."+state_name);
+			}
+		}
+		
+		// checking that there are no deadlocks
+		for(Node group:diagram.getChildrenArray()){
+			String state_var = group.getName().replaceAll(" ", "")+"_state";
+			for(Node child:group.getChildrenArray()){
+				Context ctx = (Context)child;
+				String state_name = ctx.getName().replaceAll(" ", "");
+				String specification = "AG ("+state_var+" = "+state_name+" -> EF ";
+				if (group.getChildrenArray().size() > 2) specification += "(";
+				for (Node o_child:group.getChildrenArray()){
+					if (o_child.equals(child)) continue;
+					String target_name = o_child.getName().replaceAll(" ", "");
+					specification += state_var+" = "+target_name+" | ";
+				}
+				specification = specification.substring(0, specification.length()-3)+")";
+				if (group.getChildrenArray().size() > 2) specification += ")";
+				specs += "SPEC "+specification+"\n";
+				specifications.put(specification, DEADLOCK_AT+" "+group.getName().replaceAll(" ", "")+"."+state_name);
 			}
 		}
 				

@@ -52,7 +52,7 @@ public class NuSMVResultParser {
 			for (String spec:_verifier.getSpecifications().keySet()){
 				if (!line.contains(spec)) continue;
 				if (line.contains("is false")) {
-					current_spec = "Violation of " + _verifier.getSpecifications().get(spec);
+					current_spec = _verifier.getSpecifications().get(spec);
 					break;
 				}
 				if (line.contains("is true")) {
