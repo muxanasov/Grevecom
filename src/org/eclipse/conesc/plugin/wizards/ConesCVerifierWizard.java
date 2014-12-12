@@ -75,8 +75,10 @@ public class ConesCVerifierWizard extends Wizard {
 			verify.addSelectionListener(new SelectionAdapter(){
 				public void widgetSelected(SelectionEvent evt){
 					Cashe.deposit("constraints", getConstraints());
-					NuSMVResultParser parser = new NuSMVResultParser(new ConesCModelVerifier(diagram), constraints.getText());
-					output.setText(parser.parse());
+					ConesCModelVerifier verifier = new ConesCModelVerifier(diagram);
+					verifier.generateModel(constraints.getText());
+					NuSMVResultParser parser = new NuSMVResultParser(verifier.getSpecifications(), constraints.getText());
+					output.setText(parser.parse(verifier.verify()));
 					parser.displayResultsOn(bar);
 				}
 			});

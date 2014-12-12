@@ -61,8 +61,7 @@ public class ConesCModelVerifier {
 		return specifications;
 	}
 
-	public String verify(String constraints) {
-		generateModel(constraints);
+	public String verify() {
 		String result = "";
 		for (String key : generated.keySet()) {
 			String model = FileManager.fwrite(key,generated.get(key));
@@ -82,12 +81,136 @@ public class ConesCModelVerifier {
 			}
 			FileManager.delete(model);
 		}
-		
-		
 		return result;
 	}
 	
-	private void generateModel(String constraints) {
+	public void generateModel(String constraints) {
+		HashMap<String, Object> map = new HashMap<String, Object>();
+		
+		String vars = "";
+		String events = "  event : {";
+		String next_vars = "";
+		String inits = "";
+		String nexts = "";
+		String nexts_triggers = "";
+		HashMap<String, List<String> > triggers = new HashMap<String, List<String> >();
+		
+		String specs = "";
+		String[] formulas = constraints.split(";");
+		String spesification = "";
+		for(int i=0;i<formulas.length;i++) {
+			if ((spesification = translate(formulas[i])).isEmpty()) continue;
+			specs += "SPEC "+spesification+"\n";
+		}
+		
+		for(Node group:diagram.getChildrenArray()) {
+			String state_var = group.getName().replaceAll(" ", "")+"_state";
+			vars += "  " + state_var + " : {";
+			next_vars += "  next_" + state_var + " : {";
+			nexts += "  next_"+state_var+" :=\n   case\n";
+			for(Node child:group.getChildrenArray()) {
+				Context ctx = (Context)child;
+				String state = child.getName().replaceAll(" ", "");
+				// dealing with vars
+				vars += state + ", ";
+				next_vars += state + ", ";
+				
+				// checking that all transitions are legal
+				boolean transitions = true;
+				if (ctx.getSourceConnections().size() == 0) {
+					String specification = "AG ("+state_var+" = "+state+" -> AX "+state_var+" = "+state+")";
+					specs += "SPEC "+specification+"\n";
+					specifications.put(specification, TRANSITION_FROM+" "+group.getName().replaceAll(" ", "")+"."+state);
+					transitions = false;
+				}
+				if (ctx.getSourceConnections().size() == group.getChildrenArray().size() - 1) transitions = false;
+				
+				// checking that all contexts are reachable
+				String specification = "AG (EF "+state_var+" = "+state+")";
+				specs += "SPEC "+specification+"\n";
+				specifications.put(specification, REACHABILITY_OF+" "+group.getName().replaceAll(" ", "")+"."+state);
+				
+				// checking deadloacks
+				specification = "AG ("+state_var+" = "+state+" -> EF ";
+				if (group.getChildrenArray().size() > 2) specification += "(";
+				for (Node o_child:group.getChildrenArray()){
+					if (o_child.equals(child)) continue;
+					String target_name = o_child.getName().replaceAll(" ", "");
+					specification += state_var+" = "+target_name+" | ";
+				}
+				specification = specification.substring(0, specification.length()-3)+")";
+				if (group.getChildrenArray().size() > 2) specification += ")";
+				specs += "SPEC "+specification+"\n";
+				specifications.put(specification, DEADLOCK_AT+" "+group.getName().replaceAll(" ", "")+"."+state);
+				
+				// dealing with triggers
+				if (!ctx.getTriggers().isEmpty()) {
+					for(String trigger:ctx.getTriggers().split("\\n")){
+						if(!trigger.contains("."))continue;
+						String group_name = trigger.split("\\.")[0]+"_state";
+						if (!triggers.containsKey(group_name)) triggers.put(group_name, new ArrayList<String>());
+						triggers.get(group_name).add("    "+state_var+" != "+state+" & next_"+state_var+" = "+state+" : "+trigger.split("\\.")[1]+";\n");
+					}
+				}
+				
+				for(Object obj:ctx.getSourceConnections()) {
+					// dealing with events
+					Connection con = (Connection)obj;
+					String label = con.getLabel();
+					if(!label.contains(" iff "))
+						events += label.replaceAll(" ", "_") + ", ";
+					else
+						events += label.split(" iff ")[0].replaceAll(" ", "_") + ", ";
+					// dealing with triggers
+					String event_condition;
+					if(!label.contains(" iff "))
+						event_condition = label.replaceAll(" ", "_");
+					else
+						event_condition = label.split(" iff ")[0].replaceAll(" ", "_");
+					nexts += "    "+state_var+" = "+state+" & event = "+event_condition+getDependencies(label)+
+							 " : "+con.getTarget().getName().replaceAll(" ", "")+";\n";
+					
+					// checking if all transitions are legal
+					if (transitions) {
+						String target_name = con.getTarget().getName().replaceAll(" ", "");
+						specification = "AG ("+state_var+" = "+state+" -> AX ("+state_var+" = "+state+" | "+state_var+" = "+target_name+"))";
+						specs += "SPEC "+specification+"\n";
+						specifications.put(specification, TRANSITION_FROM+" "+group.getName().replaceAll(" ", "")+"."+state);
+					}
+				}
+				// dealing with inits
+				if (ctx.isDefault()) {
+					inits += "  init("+state_var+") := "+state+";\n";
+				}
+			}
+			vars = vars.substring(0, vars.length()-2) + "};\n";
+			next_vars = next_vars.substring(0, next_vars.length()-2) + "};\n";
+			nexts += "    TRUE : "+state_var+";\n   esac;\n";
+		}
+		
+		// still dealing with triggers....
+		for(Node group:diagram.getChildrenArray()) {
+			String state_var = group.getName().replaceAll(" ", "")+"_state";
+			nexts_triggers += "  next("+state_var+") :=\n   case\n";
+			if (triggers.containsKey(state_var))
+				for(String trigger:triggers.get(state_var))
+					nexts_triggers += trigger;
+			nexts_triggers += "    TRUE : next_" + state_var + ";\n   esac;\n";
+		}
+		// DONE!
+		
+		map.put("vars", vars);
+		events = events.substring(0, events.length()-2) + "};\n";
+		map.put("events", events);
+		map.put("next_vars", next_vars);
+		map.put("inits", inits);
+		map.put("nexts", nexts+nexts_triggers);
+		map.put("specs", specs);
+		
+		generated.put("model.smv", StringTemplate.build(applicationModel, map));
+	}
+	
+	public void generateModel2(String constraints) {
 		HashMap<String, Object> map = new HashMap<String, Object>();
 		
 		String vars = "";
@@ -193,6 +316,12 @@ public class ConesCModelVerifier {
 			for(Node child:group.getChildrenArray()){
 				Context ctx = (Context)child;
 				String state_name = ctx.getName().replaceAll(" ", "");
+				if (ctx.getSourceConnections().size() == 0) {
+					String specification = "AG ("+state_var+" = "+state_name+" -> AX "+state_var+" = "+state_name+")";
+					specs += "SPEC "+specification+"\n";
+					specifications.put(specification, TRANSITION_FROM+" "+group.getName().replaceAll(" ", "")+"."+state_name);
+					continue;
+				}
 				if (ctx.getSourceConnections().size() == group.getChildrenArray().size() - 1) continue;
 				for (Object o:ctx.getSourceConnections()){
 					Connection con = (Connection)o;

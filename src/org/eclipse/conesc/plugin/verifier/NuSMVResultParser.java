@@ -24,21 +24,29 @@ import org.eclipse.swt.widgets.ScrollBar;
 
 public class NuSMVResultParser {
 	
-	private ConesCModelVerifier _verifier;
+	HashMap<String, String> _specifications;
 	private String _constraints;
 	private HashMap<String, String> _counterexamples = null;
 	
-	public NuSMVResultParser(ConesCModelVerifier verifier, String constraints){
-		_verifier = verifier;
+	public NuSMVResultParser(HashMap<String, String> specifications, String constraints){
+		_specifications = specifications;
 		_constraints = constraints;
 	}
 	
-	public String parse() {
+	public NuSMVResultParser(){
+	}
+	
+	public String parse(String result) {
+		return parse(result, _specifications, _constraints);
+	}
+	
+	public String parse(String result, HashMap<String, String> specifications, String constraints) {
 		_counterexamples = new HashMap<String, String>();
 		String output = "";
 		String current_spec = "";
 		String counterexample = "";
-		for(String line:_verifier.verify(_constraints).split("\\n")){
+		//_verifier.generateModel(_constraints);
+		for(String line:result.split("\\n")){
 			if(line.startsWith("***")||line.isEmpty()) continue;
 			//System.out.println(line);
 			if (!line.startsWith("--")) {
@@ -49,10 +57,10 @@ public class NuSMVResultParser {
 				_counterexamples.put(current_spec,counterexample);
 			if (!line.contains("is true") && !line.contains("is false")) continue;
 			current_spec = line.replaceAll("-- specification ", "").replaceAll("_state = ", ".");
-			for (String spec:_verifier.getSpecifications().keySet()){
+			for (String spec:specifications.keySet()){
 				if (!line.contains(spec)) continue;
 				if (line.contains("is false")) {
-					current_spec = _verifier.getSpecifications().get(spec);
+					current_spec = specifications.get(spec);
 					break;
 				}
 				if (line.contains("is true")) {
@@ -66,7 +74,7 @@ public class NuSMVResultParser {
 		}
 		if (!current_spec.isEmpty()&&!counterexample.isEmpty())
 			_counterexamples.put(current_spec,counterexample);
-		return output;
+		return output.isEmpty()?"No errors.":output;
 	}
 	
 	public void displayResultsOn(ExpandBar bar){
@@ -203,7 +211,7 @@ public class NuSMVResultParser {
 				// substring because we have 2 redundant spaces :/
 				state.put(line.substring(2,line.length()).split("_state = ")[0], line.split("_state = ")[1]);
 			}
-			_canvas_h = 27+STR_H*(1+lines);
+			_canvas_h = 27+STR_H*(1+((state.lines()<lines)?lines:state.lines()));
 			return _canvas_h;
 		}
 	}

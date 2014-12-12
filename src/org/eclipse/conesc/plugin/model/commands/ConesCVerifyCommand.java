@@ -22,7 +22,9 @@ public class ConesCVerifyCommand extends Command {
 	private String constraints = "";
 	
 	public void execute() {
-		new ConesCModelVerifier(diagram).verify(constraints);
+		ConesCModelVerifier verifier = new ConesCModelVerifier(diagram);
+		verifier.generateModel(constraints);
+		verifier.verify();
 	}
 	
 	public void setModel(Object model) {
