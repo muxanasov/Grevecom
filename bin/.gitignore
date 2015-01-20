@@ -1,4 +1,3 @@
-/share/
 /.DS_Store
 /Benchmark.class
 /bin_linux/
@@ -6,3 +5,7 @@
 /include/
 /lib/
 /org/
+/share/
+/Benchmark$1.class
+/Benchmark$Specimen.class
+/Benchmark$2.class
