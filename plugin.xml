@@ -13,9 +13,6 @@
       </editor>
    </extension>
    <extension point="org.eclipse.ui.newWizards">
-      <category name="Examples"
-                parentCategory="org.eclipse.ui.Examples"
-                id="org.eclipse.gef.examples"/>
       <wizard name="ConesC Graphical Diagram (.cgd)"
               icon="shapes.gif"
               category="org.eclipse.ui.Examples/org.eclipse.gef.examples"

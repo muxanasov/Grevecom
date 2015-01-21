@@ -11,9 +11,13 @@
 
 package org.eclipse.conesc.plugin.verifier;
 
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,6 +35,13 @@ import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.osgi.framework.Bundle;
+
+import Benchmark.PIDHelper;
+
+import com.jezhumble.javasysmon.CpuTimes;
+import com.jezhumble.javasysmon.JavaSysMon;
+import com.jezhumble.javasysmon.OsProcess;
+import com.jezhumble.javasysmon.ProcessInfo;
 
 public class ConesCModelVerifier {
 	
@@ -63,24 +74,41 @@ public class ConesCModelVerifier {
 
 	public String verify() {
 		String result = "";
+		//System.out.println("Verify!");
 		for (String key : generated.keySet()) {
 			String model = FileManager.fwrite(key,generated.get(key));
 			//System.out.println("Verifying the model:\n"+generated.get(key));
 			try {
+				//System.out.println(BinarySelector.getNuSMVBin());
+				JavaSysMon monitor =   new JavaSysMon();
+				ProcessInfo nusmv = null;
 				Process p = new ProcessBuilder(BinarySelector.getNuSMVBin(),model).start();
+				
+				long pid = PIDHelper.getPID(p);
+				for (ProcessInfo pinfo:monitor.processTable()){
+					if(pinfo.getPid() == pid){
+						System.out.println(" "+pinfo.getPid()+":"+pid);
+						nusmv = pinfo;
+						break;
+					}
+				}
+				
 				BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
 
 				String line = null;
 				while ((line = br.readLine()) != null) {
 					result += line+"\n";
 				}
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
+				
+				p.destroyForcibly();
+				System.out.print(" "+nusmv.getUserMillis()+" ");
+			} catch (IOException  e) {
 				System.err.println("Exception verifying the model:\n"+generated.get(key));
 				e.printStackTrace();
 			}
 			FileManager.delete(model);
 		}
+		//System.out.println(result);
 		return result;
 	}
 	

@@ -4,5 +4,7 @@
 	<classpathentry exported="true" kind="con" path="org.eclipse.pde.core.requiredPlugins"/>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="NuSMV-2.5.4-linux-mac"/>
+	<classpathentry kind="lib" path="javasysmon-0.3.5.jar"/>
+	<classpathentry kind="lib" path="jna-4.1.0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
