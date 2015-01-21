@@ -1,4 +1,7 @@
 package Benchmark;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -111,16 +114,20 @@ public class BenchmarkUtils {
 		return new double[]{avg,mean_quad};
 	}
 	
-	public static ProcessInfo getNuSMVProcessInfo(){
-		JavaSysMon monitor =   new JavaSysMon();
-		ProcessInfo[] pinfos = monitor.processTable();
-		ProcessInfo nusmv = null;
-		for (ProcessInfo pinfo:pinfos)
-			if(pinfo.getName().toLowerCase().contains("nusmv")){
-				nusmv = pinfo;
-				break;
-			}
-		return nusmv;
+	public static void getNuSMVProcessInfo(){
+		String line;
+		try {
+			Process p = Runtime.getRuntime().exec("ps -e");
+			BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+			while((line=input.readLine()) != null)
+				if (line.toLowerCase().contains("nusmv")) {
+					System.out.println(line);
+					break;
+				}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 }

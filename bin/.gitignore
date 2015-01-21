@@ -1,11 +1,4 @@
-/.DS_Store
-/Benchmark.class
-/bin_linux/
-/bin_mac/
-/include/
-/lib/
+/Benchmark/
+/bin_win_64/
 /org/
-/share/
-/Benchmark$1.class
-/Benchmark$Specimen.class
-/Benchmark$2.class
+bin/

@@ -13,15 +13,15 @@ public class GenerationTimeSpecimen extends Specimen{
 	public long get_value(Object[] args) {
 		long stCPU, stUser, stSys, gtCPU, gtUser, gtSys, st, gt;
 		//stCPU = Times.getCpuTime();
-		//stUser = Times.getUserTime();
+		stUser = Times.getUserTime();
 		//stSys = Times.getSystemTime();
-		st = System.currentTimeMillis();//_tmbean.getThreadCpuTime(_mainID);
+		//st = System.currentTimeMillis();//_tmbean.getThreadCpuTime(_mainID);
 		((ConesCModelVerifier)args[0]).generateModel("");
 		//gtCPU = Times.getCpuTime();
-		//gtUser = Times.getUserTime();
+		gtUser = Times.getUserTime();
 		//gtSys = Times.getSystemTime();
-		gt = System.currentTimeMillis();//_tmbean.getThreadCpuTime(_mainID);
-		return gt - st;
+		//gt = System.currentTimeMillis();//_tmbean.getThreadCpuTime(_mainID);
+		return gtUser - stUser;
 	}
 	@Override
 	public Object init(Object[] args) {

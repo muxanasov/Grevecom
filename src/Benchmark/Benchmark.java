@@ -42,11 +42,11 @@ public class Benchmark {
 		*/
 		int[] groups_slice = new int[]{1,2,3,4,5,6,7,8,9,10};
 		int[] contexts_slice = new int[]{5,8,10};
-		BenchmarkUtils.runBenchmark(groups_slice, contexts_slice, new GenerationTimeSpecimen());
+		//BenchmarkUtils.runBenchmark(groups_slice, contexts_slice, new GenerationTimeSpecimen());
 		
 		groups_slice = new int[]{2,5,10};
 		contexts_slice = new int[]{1,2,3,4,5,6,7,8,9,10};
-		BenchmarkUtils.runBenchmark(groups_slice, contexts_slice, new GenerationTimeSpecimen());
+		//BenchmarkUtils.runBenchmark(groups_slice, contexts_slice, new GenerationTimeSpecimen());
 		
 		groups_slice = new int[]{2,3,4,5,6,7,8,9,10};
 		contexts_slice = new int[]{2,5,10};

@@ -21,13 +21,14 @@ public class DeadlockSpecimen extends Specimen{
 		NuSMVResultParser parser = (NuSMVResultParser)args[0];
 		_verifier.generateModel("");
 		//ProcessInfo nusmv = BenchmarkUtils.getNuSMVProcessInfo();
-		//stUser = nusmv.getUserMillis();
+		stUser = Times.getUserTime();
 		_result = _verifier.verify();
+		BenchmarkUtils.getNuSMVProcessInfo();
 		//ProcessInfo nusmv = BenchmarkUtils.getNuSMVProcessInfo();
-		//gtUser = nusmv.getSystemMillis();
+		gtUser = Times.getUserTime();
 		_result = parser.parse(_result, _verifier.getSpecifications(), "");
 		if (_result.contains("Unreachable"))
-			return 0;//nusmv.getUserMillis();//gtCPU - stCPU;
+			return 0;//gtUser-stUser;//nusmv.getUserMillis();//gtCPU - stCPU;
 		System.err.println("Model has no unreachables!\n"+_result);
 		return -1;
 	}
