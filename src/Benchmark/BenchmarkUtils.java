@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.eclipse.conesc.plugin.model.Connection;
 import org.eclipse.conesc.plugin.model.Context;
@@ -17,6 +19,7 @@ import com.jezhumble.javasysmon.ProcessInfo;
 public class BenchmarkUtils {
 	
 	public static int _event = 0;
+	public static Pattern _pattern = Pattern.compile("[0-9]:[0-9][0-9].[0-9][0-9]");
 	
 	public static ContextDiagram makeUnreachable(ContextDiagram diagram) {
 		int groups = diagram.getChildrenArray().size();
@@ -114,20 +117,27 @@ public class BenchmarkUtils {
 		return new double[]{avg,mean_quad};
 	}
 	
-	public static void getNuSMVProcessInfo(){
+	public static String getNuSMVUserTime(){
 		String line;
 		try {
 			Process p = Runtime.getRuntime().exec("ps -e");
 			BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
-			while((line=input.readLine()) != null)
-				if (line.toLowerCase().contains("nusmv")) {
-					System.out.println(line);
-					break;
+			//p.waitFor();
+			while((line=input.readLine()) != null){
+				//System.out.println(line);
+				if (line.toLowerCase().contains("nusmv") && !line.toLowerCase().contains("grep")) {
+					//System.out.println(line);
+					Matcher matcher = _pattern.matcher(line);
+					if (matcher.find()) {
+					    return matcher.group(0);
+					}
 				}
-		} catch (IOException e) {
+			}
+		} catch (IOException  e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		return "nan";
 	}
 
 }

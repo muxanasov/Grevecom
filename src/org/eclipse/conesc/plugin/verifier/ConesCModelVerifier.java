@@ -81,29 +81,7 @@ public class ConesCModelVerifier {
 			String model = FileManager.fwrite(key,generated.get(key));
 			//System.out.println("Verifying the model:\n"+generated.get(key));
 			try {
-				//System.out.println(BinarySelector.getNuSMVBin());
-				//JavaSysMon monitor =   new JavaSysMon();
-				//System.out.print(monitor.osName());
-				//ProcessInfo nusmv = null;
-				//long stCPU, stUser, stSys, gtCPU, gtUser, gtSys;
-				//stCPU = Times.getCpuTime();
-				//stUser = Times.getUserTime();
-				//stSys = Times.getSystemTime();
 				Process p = new ProcessBuilder(BinarySelector.getNuSMVBin(),model).start();
-				
-				//gtCPU = Times.getCpuTime();
-				//gtUser = Times.getUserTime();
-				//gtSys = Times.getSystemTime();
-				/*
-				long pid = PIDHelper.getPID(p);
-				for (ProcessInfo pinfo:monitor.processTable()){
-					if(pinfo.getPid() == pid){
-						System.out.print(" "+pinfo.getPid()+":"+pid+":"+pinfo.getUserMillis()+" ");
-						nusmv = pinfo;
-						break;
-					}
-				}
-				*/
 				BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
 
 				String line = null;
@@ -112,8 +90,7 @@ public class ConesCModelVerifier {
 				}
 				p.waitFor();
 				p.destroy();
-				//System.out.println(" cpu:"+(gtCPU-stCPU)+" user:"+(gtUser-stUser)+" sys:"+(gtSys-stSys));
-			} catch (IOException | InterruptedException  e) {
+			} catch (IOException | InterruptedException   e) {
 				System.err.println("Exception verifying the model:\n"+generated.get(key));
 				e.printStackTrace();
 			}
