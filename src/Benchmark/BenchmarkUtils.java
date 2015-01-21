@@ -11,6 +11,8 @@ import org.eclipse.conesc.plugin.model.Connection;
 import org.eclipse.conesc.plugin.model.Context;
 import org.eclipse.conesc.plugin.model.ContextDiagram;
 import org.eclipse.conesc.plugin.model.ContextGroup;
+import org.eclipse.conesc.plugin.utils.BinarySelector;
+import org.eclipse.core.runtime.Path;
 
 import com.jezhumble.javasysmon.JavaSysMon;
 import com.jezhumble.javasysmon.ProcessInfo;
@@ -20,6 +22,7 @@ public class BenchmarkUtils {
 	
 	public static int _event = 0;
 	public static Pattern _pattern = Pattern.compile("[0-9]:[0-9][0-9].[0-9][0-9]");
+	public static Pattern _win_pattern = Pattern.compile("[0-9]:[0-9][0-9]:[0-9][0-9]");
 	
 	public static ContextDiagram makeUnreachable(ContextDiagram diagram) {
 		int groups = diagram.getChildrenArray().size();
@@ -119,23 +122,47 @@ public class BenchmarkUtils {
 	
 	public static String getNuSMVUserTime(){
 		String line;
-		try {
-			Process p = Runtime.getRuntime().exec("ps -e");
-			BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
-			//p.waitFor();
-			while((line=input.readLine()) != null){
-				//System.out.println(line);
-				if (line.toLowerCase().contains("nusmv") && !line.toLowerCase().contains("grep")) {
+		String os = BinarySelector.osCheck();
+		if (os.equals(BinarySelector.MACOS)){
+			try {
+				Process p = Runtime.getRuntime().exec("ps -e");
+				BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+				//p.waitFor();
+				while((line=input.readLine()) != null){
 					//System.out.println(line);
-					Matcher matcher = _pattern.matcher(line);
-					if (matcher.find()) {
-					    return matcher.group(0);
+					if (line.toLowerCase().contains("nusmv") && !line.toLowerCase().contains("grep")) {
+						//System.out.println(line);
+						Matcher matcher = _pattern.matcher(line);
+						if (matcher.find()) {
+						    return matcher.group(0);
+						}
 					}
 				}
+			} catch (IOException  e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
-		} catch (IOException  e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		}
+		if (os.equals(BinarySelector.WINDOWS64)){
+			try {
+				Process p = Runtime.getRuntime().exec("tasklist.exe /v");
+				BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+				//p.waitFor();
+				while((line=input.readLine()) != null){
+					//System.out.println(line);
+					if (line.contains("NuSMV.exe")) {
+						//System.out.println(line);
+						Matcher matcher = _win_pattern.matcher(line);
+						if (matcher.find()) {
+							//System.out.println(matcher.group(0));
+						    return matcher.group(0);
+						}
+					}
+				}
+			} catch (IOException  e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 		return "nan";
 	}

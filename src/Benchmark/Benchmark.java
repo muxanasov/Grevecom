@@ -48,8 +48,8 @@ public class Benchmark {
 		contexts_slice = new int[]{1,2,3,4,5,6,7,8,9,10};
 		//BenchmarkUtils.runBenchmark(groups_slice, contexts_slice, new GenerationTimeSpecimen());
 		
-		groups_slice = new int[]{2,3,4,5,6,7,8,9,10};
-		contexts_slice = new int[]{2,5,10};
+		groups_slice = new int[]{5,3,4,5,6,7,8,9,10};
+		contexts_slice = new int[]{10,5,10};
 		BenchmarkUtils.runBenchmark(groups_slice, contexts_slice, new DeadlockSpecimen());
 		
 		groups_slice = new int[]{2,5,10};
