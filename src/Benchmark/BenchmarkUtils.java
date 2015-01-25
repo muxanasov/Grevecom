@@ -21,8 +21,8 @@ import com.jezhumble.javasysmon.ProcessInfo;
 public class BenchmarkUtils {
 	
 	public static int _event = 0;
-	public static Pattern _pattern = Pattern.compile("[0-9]:[0-9][0-9].[0-9][0-9]");
-	public static Pattern _win_pattern = Pattern.compile("[0-9]:[0-9][0-9]:[0-9][0-9]");
+	public static Pattern _pattern = Pattern.compile("(\\d+):(\\d+).(\\d+)");
+	public static Pattern _win_pattern = Pattern.compile("(\\d+):(\\d+):(\\d+)");
 	
 	public static ContextDiagram makeUnreachable(ContextDiagram diagram) {
 		int groups = diagram.getChildrenArray().size();
@@ -74,10 +74,11 @@ public class BenchmarkUtils {
 				double error = 1;
 				double[] deviation = new double[2];
 				while (error > 0.333) {
-					int measurments = 10;
+					int measurments = 1;
 					long[] gen_ts = new long[measurments];
 					while(measurments>0){
 						measurments--;
+						//System.out.print(" s:"+measurments+" ");
 						long value = specimen.get_value(new Object[]{obj});
 						if (value <= 0) {
 							measurments++;
@@ -145,7 +146,7 @@ public class BenchmarkUtils {
 		}
 		if (os.equals(BinarySelector.WINDOWS64)){
 			try {
-				Process p = Runtime.getRuntime().exec("tasklist.exe /v");
+				Process p = Runtime.getRuntime().exec("tasklist.exe /v /fi \"imagename eq NuSMV.exe\"");
 				BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
 				//p.waitFor();
 				while((line=input.readLine()) != null){
@@ -165,6 +166,28 @@ public class BenchmarkUtils {
 			}
 		}
 		return "nan";
+	}
+	
+	public static long millisFrom(String period) {
+		String os = BinarySelector.osCheck();
+	    Matcher matcher = null;
+	    if (os.equals(BinarySelector.MACOS))
+	    	matcher = _pattern.matcher(period);
+	    if (os.startsWith(BinarySelector.WINDOWS))
+	    	matcher = _win_pattern.matcher(period);
+	    if (matcher.matches()) {
+	        long result = 0;
+	        if (os.equals(BinarySelector.MACOS))
+	        	result += Long.parseLong(matcher.group(1)) * 60000 
+			            + Long.parseLong(matcher.group(2)) * 1000 
+			            + Long.parseLong(matcher.group(3)) * 10; 
+	        if (os.startsWith(BinarySelector.WINDOWS))
+	        	result += Long.parseLong(matcher.group(1)) * 60*60000 
+			            + Long.parseLong(matcher.group(2)) * 60000 
+			            + Long.parseLong(matcher.group(3)) * 1000; 
+	        return result == 0 ? result+1 : result;
+	    }
+	    return 0;
 	}
 
 }

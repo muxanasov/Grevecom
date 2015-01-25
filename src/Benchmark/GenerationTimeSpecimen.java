@@ -19,6 +19,7 @@ public class GenerationTimeSpecimen extends Specimen{
 		((ConesCModelVerifier)args[0]).generateModel("");
 		//gtCPU = Times.getCpuTime();
 		gtUser = Times.getUserTime();
+		//System.out.println(gtUser - stUser);
 		//gtSys = Times.getSystemTime();
 		//gt = System.currentTimeMillis();//_tmbean.getThreadCpuTime(_mainID);
 		return gtUser - stUser;
