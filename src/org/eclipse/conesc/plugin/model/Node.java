@@ -38,6 +38,14 @@ public class Node implements IAdaptable, Serializable {
 	public static final String PROPERTY_REMOVE = "NodeRemoveChild";
 	public static final String PROPERTY_LAYOUT = "NodeLayout";
 	
+	public Node(String name){
+		this.name = name;
+		this.layout = new Rectangle(10,10,10,10);
+		this.children = new ArrayList<Node>();
+		this.parent = null;
+		this.listeners = new PropertyChangeSupport(this);
+	}
+	
 	public Node() {
 		this.name = "Unknown";
 		this.layout = new Rectangle(10,10,10,10);
@@ -84,6 +92,13 @@ public class Node implements IAdaptable, Serializable {
 			return true;
 		}
 		return false;
+	}
+	
+	public boolean[] addChildren(Node[] children){
+		boolean[] result = new boolean[children.length];
+		for(int i = 0; i<children.length;i++)
+			result[i]=addChild(children[i]);
+		return result;
 	}
 	
 	public boolean removeChild(Node child) {

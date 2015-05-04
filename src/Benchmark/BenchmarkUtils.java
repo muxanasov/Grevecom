@@ -41,8 +41,60 @@ public class BenchmarkUtils {
 			((Connection)obj).setLabel(((Connection)obj).getLabel()+" iff "+context_1.name);
 		return diagram;
 	}
+	public static ContextDiagram putDependencies(ContextDiagram diagram) {
+		int groups = diagram.getChildrenArray().size();
+		if (groups < 2) return diagram; // no deadlocks with less than 2 groups
+		// From the last two groups...
+		ContextGroup group_1 = (ContextGroup)diagram.getChildrenArray().get(groups-1);
+		ContextGroup group_2 = (ContextGroup)diagram.getChildrenArray().get(groups-2);
+		int contexts = group_1.getChildrenArray().size();
+		// ...take last contexts...
+		Context context_1 = (Context)group_1.getChildrenArray().get(contexts-1);
+		Context context_2 = (Context)group_2.getChildrenArray().get(contexts-1);
+		// ...and their connections, and put dependencies
+		for(Object obj : context_1.getSourceConnections())
+			((Connection)obj).setLabel(((Connection)obj).getLabel()+" iff "+context_2.name);
+		for(Object obj : context_2.getSourceConnections())
+			((Connection)obj).setLabel(((Connection)obj).getLabel()+" iff "+context_1.name);
+		return diagram;
+	}
+	public static ContextDiagram putTrigger(ContextDiagram diagram) {
+		int groups = diagram.getChildrenArray().size();
+		if (groups < 2) return diagram; // no deadlocks with less than 2 groups
+		// From the last two groups...
+		ContextGroup group_1 = (ContextGroup)diagram.getChildrenArray().get(groups-1);
+		ContextGroup group_2 = (ContextGroup)diagram.getChildrenArray().get(groups-2);
+		int contexts = group_1.getChildrenArray().size();
+		// ...take last contexts...
+		Context context_1 = (Context)group_1.getChildrenArray().get(0);//contexts-1);
+		Context context_2 = (Context)group_2.getChildrenArray().get(0);//contexts-1);
+		// ...and their connections, and put a trigger
+		context_1.setTriggers(group_2.name.replaceAll(" ","")+"."+context_2.name.replaceAll(" ", ""));
+		int connections = context_2.getSourceConnections().size();
+		// remove one connection
+		((Connection)(context_2.getSourceConnections().get(connections-1))).disconnect();
+		return diagram;
+	}
+	
+	public static ContextDiagram putIllegalTransition(ContextDiagram diagram) {
+		int groups = diagram.getChildrenArray().size();
+		if (groups < 2) return diagram; // no deadlocks with less than 2 groups
+		// From the last two groups...
+		ContextGroup group_1 = (ContextGroup)diagram.getChildrenArray().get(groups-1);
+		ContextGroup group_2 = (ContextGroup)diagram.getChildrenArray().get(groups-2);
+		int contexts = group_1.getChildrenArray().size();
+		// ...take last contexts...
+		Context context_1 = (Context)group_1.getChildrenArray().get(0);//contexts-1);
+		Context context_2 = (Context)group_2.getChildrenArray().get(0);//contexts-1);
+		// ...and their connections, and put a trigger
+		context_1.setTriggers(group_2.name.replaceAll(" ","")+"."+context_2.name.replaceAll(" ", ""));
+		int connections = context_2.getSourceConnections().size();
+		// remove one connection
+		((Connection)(context_2.getTargetConnections().get(connections-1))).disconnect();
+		return diagram;
+	}
 
-	public static void runBenchmark(int[] groups_slice, int[] contexts_slice, Specimen specimen) {
+	public static void runBenchmark(int[] groups_slice, int[] contexts_slice, Specimen specimen) throws Exception {
 		// TODO Auto-generated method stub
 		
 		_event = 0;
@@ -73,8 +125,8 @@ public class BenchmarkUtils {
 				
 				double error = 1;
 				double[] deviation = new double[2];
-				while (error > 0.333) {
-					int measurments = 1;
+				while (error > 0.05) {
+					int measurments = 10;
 					long[] gen_ts = new long[measurments];
 					while(measurments>0){
 						measurments--;
@@ -121,7 +173,7 @@ public class BenchmarkUtils {
 		return new double[]{avg,mean_quad};
 	}
 	
-	public static String getNuSMVUserTime(){
+	public static long getNuSMVUserTime(long prev_time){
 		String line;
 		String os = BinarySelector.osCheck();
 		if (os.equals(BinarySelector.MACOS)){
@@ -135,7 +187,8 @@ public class BenchmarkUtils {
 						//System.out.println(line);
 						Matcher matcher = _pattern.matcher(line);
 						if (matcher.find()) {
-						    return matcher.group(0);
+							long time = millisFrom(matcher,os);
+						    return time > prev_time?time:prev_time;
 						}
 					}
 				}
@@ -156,7 +209,8 @@ public class BenchmarkUtils {
 						Matcher matcher = _win_pattern.matcher(line);
 						if (matcher.find()) {
 							//System.out.println(matcher.group(0));
-						    return matcher.group(0);
+							long time = millisFrom(matcher,os);
+						    return time > prev_time?time:prev_time;
 						}
 					}
 				}
@@ -165,29 +219,34 @@ public class BenchmarkUtils {
 				e.printStackTrace();
 			}
 		}
-		return "nan";
+		return 0;
 	}
 	
-	public static long millisFrom(String period) {
-		String os = BinarySelector.osCheck();
-	    Matcher matcher = null;
-	    if (os.equals(BinarySelector.MACOS))
-	    	matcher = _pattern.matcher(period);
-	    if (os.startsWith(BinarySelector.WINDOWS))
-	    	matcher = _win_pattern.matcher(period);
-	    if (matcher.matches()) {
-	        long result = 0;
-	        if (os.equals(BinarySelector.MACOS))
-	        	result += Long.parseLong(matcher.group(1)) * 60000 
-			            + Long.parseLong(matcher.group(2)) * 1000 
-			            + Long.parseLong(matcher.group(3)) * 10; 
-	        if (os.startsWith(BinarySelector.WINDOWS))
-	        	result += Long.parseLong(matcher.group(1)) * 60*60000 
-			            + Long.parseLong(matcher.group(2)) * 60000 
-			            + Long.parseLong(matcher.group(3)) * 1000; 
-	        return result == 0 ? result+1 : result;
+	public static long millisFrom(Matcher matcher, String os) {
+		long result = 0;
+	    if (os.equals(BinarySelector.MACOS)){
+	    	result += Long.parseLong(matcher.group(1)) * 60000 
+			        + Long.parseLong(matcher.group(2)) * 1000 
+			        + Long.parseLong(matcher.group(3)) * 10; 
+	    	return result == 0 ? result+1 : result;
 	    }
-	    return 0;
+	    if (os.startsWith(BinarySelector.WINDOWS)){
+	    	result += Long.parseLong(matcher.group(1)) * 60*60000 
+			        + Long.parseLong(matcher.group(2)) * 60000 
+			        + Long.parseLong(matcher.group(3)) * 1000;
+	    	return result == 0 ? result+1 : result;
+	    }
+		return result;
+	}
+	
+	public static long millisFrom2(Matcher matcher, String os) {
+		long result = 0;
+	    if (os.equals(BinarySelector.MACOS)){
+	    	result += Long.parseLong(matcher.group(1)) * 1000 
+			        + Long.parseLong(matcher.group(2)) * 10; 
+	    	return result == 0 ? result+1 : result;
+	    }
+		return result;
 	}
 
 }

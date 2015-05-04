@@ -1,4 +1,4 @@
-package Benchmark;
+package Benchmark.SynthesizedSpecimens;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -6,22 +6,19 @@ import org.eclipse.conesc.plugin.model.Context;
 import org.eclipse.conesc.plugin.model.ContextDiagram;
 import org.eclipse.conesc.plugin.verifier.ConesCModelVerifier;
 
+import Benchmark.BenchmarkUtils;
+import Benchmark.Specimen;
+import Benchmark.Times;
+
 
 public class GenerationTimeSpecimen extends Specimen{
 	
 	@Override
 	public long get_value(Object[] args) {
-		long stCPU, stUser, stSys, gtCPU, gtUser, gtSys, st, gt;
-		//stCPU = Times.getCpuTime();
+		long stUser, gtUser;
 		stUser = Times.getUserTime();
-		//stSys = Times.getSystemTime();
-		//st = System.currentTimeMillis();//_tmbean.getThreadCpuTime(_mainID);
 		((ConesCModelVerifier)args[0]).generateModel("");
-		//gtCPU = Times.getCpuTime();
 		gtUser = Times.getUserTime();
-		//System.out.println(gtUser - stUser);
-		//gtSys = Times.getSystemTime();
-		//gt = System.currentTimeMillis();//_tmbean.getThreadCpuTime(_mainID);
 		return gtUser - stUser;
 	}
 	@Override
@@ -29,7 +26,6 @@ public class GenerationTimeSpecimen extends Specimen{
 		ConesCModelVerifier verifier = new ConesCModelVerifier((ContextDiagram)args[0]);
 		for(int i=0;i<10;i++) {
 			verifier.generateModel("");
-			//verifier.verify();
 		}
 		return verifier;
 	}

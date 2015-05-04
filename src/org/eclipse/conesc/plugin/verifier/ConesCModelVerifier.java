@@ -15,6 +15,7 @@ package org.eclipse.conesc.plugin.verifier;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
@@ -37,7 +38,6 @@ import org.eclipse.core.runtime.Platform;
 import org.osgi.framework.Bundle;
 
 import Benchmark.BenchmarkUtils;
-import Benchmark.PIDHelper;
 import Benchmark.Times;
 
 import com.jezhumble.javasysmon.CpuTimes;
@@ -73,24 +73,32 @@ public class ConesCModelVerifier {
 	public HashMap<String, String> getSpecifications() {
 		return specifications;
 	}
+	
+	public String verify(){
+		return verify("");
+	}
 
-	public String verify() {
+	public String verify(String flags) {
 		String result = "";
-		//System.out.println("Verify!");
 		for (String key : generated.keySet()) {
 			String model = FileManager.fwrite(key,generated.get(key));
 			//System.out.println("Verifying the model:\n"+generated.get(key));
 			try {
-				Process p = new ProcessBuilder(BinarySelector.getNuSMVBin(),model).start();
+				Process p = flags.isEmpty()?new ProcessBuilder("time", BinarySelector.getNuSMVBin(),model).start():
+											new ProcessBuilder("time", BinarySelector.getNuSMVBin(),flags,model).start();
 				BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+				BufferedReader ber = new BufferedReader(new InputStreamReader(p.getErrorStream()));
 
 				String line = null;
 				while ((line = br.readLine()) != null) {
 					result += line+"\n";
 				}
+				while ((line = ber.readLine()) != null) {
+					result += line+"\n";
+				}
 				p.waitFor();
 				p.destroy();
-			} catch (IOException | InterruptedException   e) {
+			} catch (IOException | InterruptedException e) {
 				System.err.println("Exception verifying the model:\n"+generated.get(key));
 				e.printStackTrace();
 			}
@@ -105,6 +113,7 @@ public class ConesCModelVerifier {
 		
 		String vars = "";
 		String events = "  event : {";
+		List<String> eventslist = new ArrayList<String>();
 		String next_vars = "";
 		String inits = "";
 		String nexts = "";
@@ -148,14 +157,18 @@ public class ConesCModelVerifier {
 				
 				// checking deadloacks
 				specification = "AG ("+state_var+" = "+state+" -> EF ";
-				if (group.getChildrenArray().size() > 2) specification += "(";
+				for(int i = 0; i < group.getChildrenArray().size() - 2; i++)
+					specification += "(";
+				boolean first = true;
 				for (Node o_child:group.getChildrenArray()){
 					if (o_child.equals(child)) continue;
 					String target_name = o_child.getName().replaceAll(" ", "");
-					specification += state_var+" = "+target_name+" | ";
+					specification += state_var+" = "+target_name;
+					specification += first?" | ":") | ";
+					first = false;
 				}
 				specification = specification.substring(0, specification.length()-3)+")";
-				if (group.getChildrenArray().size() > 2) specification += ")";
+				//if (group.getChildrenArray().size() > 2) specification += ")";
 				specs += "SPEC "+specification+"\n";
 				specifications.put(specification, DEADLOCK_AT+" "+group.getName().replaceAll(" ", "")+"."+state);
 				
@@ -168,15 +181,23 @@ public class ConesCModelVerifier {
 						triggers.get(group_name).add("    "+state_var+" != "+state+" & next_"+state_var+" = "+state+" : "+trigger.split("\\.")[1]+";\n");
 					}
 				}
-				
+				String trigger_specification = "AG ("+state_var+" = "+state+" -> AX ";
+				for(int i = 0; i < ctx.getSourceConnections().size(); i++)
+					trigger_specification += "(";
+				trigger_specification += state_var+" = "+state+" | ";
 				for(Object obj:ctx.getSourceConnections()) {
 					// dealing with events
 					Connection con = (Connection)obj;
 					String label = con.getLabel();
+					String event = "";
 					if(!label.contains(" iff "))
-						events += label.replaceAll(" ", "_") + ", ";
+						event = label.replaceAll(" ", "_");
 					else
-						events += label.split(" iff ")[0].replaceAll(" ", "_") + ", ";
+						event = label.split(" iff ")[0].replaceAll(" ", "_");
+					if(!event.isEmpty()&&!eventslist.contains(event)){
+						events += event+", ";
+						eventslist.add(event);
+					}
 					// dealing with triggers
 					String event_condition;
 					if(!label.contains(" iff "))
@@ -189,10 +210,13 @@ public class ConesCModelVerifier {
 					// checking if all transitions are legal
 					if (transitions) {
 						String target_name = con.getTarget().getName().replaceAll(" ", "");
-						specification = "AG ("+state_var+" = "+state+" -> AX ("+state_var+" = "+state+" | "+state_var+" = "+target_name+"))";
-						specs += "SPEC "+specification+"\n";
-						specifications.put(specification, TRANSITION_FROM+" "+group.getName().replaceAll(" ", "")+"."+state);
+						trigger_specification += state_var+" = "+target_name+") | ";
 					}
+				}
+				if (transitions) {
+					trigger_specification = trigger_specification.substring(0, trigger_specification.length()-3)+")";
+					specs += "SPEC "+trigger_specification+"\n";
+					specifications.put(trigger_specification, TRANSITION_FROM+" "+group.getName().replaceAll(" ", "")+"."+state);
 				}
 				// dealing with inits
 				if (ctx.isDefault()) {

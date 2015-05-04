@@ -43,8 +43,14 @@ public class Context extends Node {
 	public static final String TARGET_CONNECTION = "TargetConnectionAdded";
 	public static final String PROPERTY_TRIGGERS = "ContextTriggers";
 	
-	public Context() {
+	public Context(){
 		super();
+		this.targetConnections = new ArrayList();
+		this.sourceConnections = new ArrayList();
+	}
+	
+	public Context(String name) {
+		super(name);
 		this.targetConnections = new ArrayList();
 		this.sourceConnections = new ArrayList();
 	}

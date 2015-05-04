@@ -61,6 +61,13 @@ public class Connection implements IAdaptable, Serializable{
 	private Object propertySource;
 	private List<ConnectionBendpoint> bendpoints;
 	public final static String PROPERTY_BENDPOINTS = "ConnectionBendpoints";
+	
+	public Connection(Context source, String label, Context target) {
+		this.label = label;
+		bendpoints = new ArrayList<ConnectionBendpoint>();
+		listeners = new PropertyChangeSupport(this);
+		reconnect(source, target);
+	}
 
 	public Connection(Context source, Context target) {
 		label = "event";

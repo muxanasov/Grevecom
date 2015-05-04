@@ -25,6 +25,14 @@ public class ContextGroup extends Node {
 	public static final String PROPERTY_NAME = "ContextGroupName";
 	private List<String> lFunctions = new ArrayList<String>();
 	private String suggestions = "";
+	
+	public ContextGroup(String name){
+		super(name);
+	}
+	
+	public ContextGroup(){
+		super();
+	}
 
 	@Override
 	public void setName(String name) {
